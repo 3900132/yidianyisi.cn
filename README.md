@@ -3,7 +3,7 @@
 一个纯前端的在线文档预览工具：在浏览器中直接预览 `.doc` / `.docx` / `.xlsx` 文档及网页版试卷，支持关键词查找定位、移动端访问、本地文件打开，无需安装任何软件，也无需服务器端解析。
 
 - **演示地址**：https://yidianyisi.cn/
-- **跨域中转演示**：https://yidianyisi.cn/proxy?url=https://www.3520.net/ks/j.docx
+- **跨域中转演示**：https://yidianyisi.cn/proxy?url=https://filesamples.com/samples/document/docx/sample1.docx
 
 ## 一、项目目录结构与文件说明
 
@@ -63,7 +63,7 @@ Makers 控制台里没有"边缘函数"菜单，函数功能叫 **Functions → 
 
 1. 把整个项目文件夹（含 `index.html` 和 `edge-functions/proxy.js`）上传到 EdgeOne Makers（支持 Git 连接、CLI、MCP 或直接上传）。
 2. `edge-functions/proxy.js` 会自动映射为 `/proxy` 路由，无需任何控制台配置。
-3. 验证：浏览器访问 `https://yidianyisi.cn/proxy?url=https://www.3520.net/ks/j.docx` 能下载到文件即成功。
+3. 验证：浏览器访问 `https://yidianyisi.cn/proxy?url=https://filesamples.com/samples/document/docx/sample1.docx` 能下载到文件即成功。
 
 原理：页面先直连目标文件，被浏览器跨域拦截时自动改走同域名的 `/proxy` 边缘函数，由边缘节点代取文件。页面与中转同源，不存在跨域。边缘函数自带文档类型白名单，防止被当作任意 URL 代理滥用。
 
@@ -71,7 +71,7 @@ Makers 控制台里没有"边缘函数"菜单，函数功能叫 **Functions → 
 
 ### 方式 B：与文档同域部署（最简单）
 
-把 `index.html` 上传到与文档相同的目录（如 `www.3520.net/ks/`）。同源请求不涉及跨域，什么代理都不需要。
+把 `index.html` 上传到与文档相同的目录（如 `yidianyisi.cn/doc/`）。同源请求不涉及跨域，什么代理都不需要。
 
 ### 方式 C：PHP 主机 + proxy.php
 
