@@ -4,7 +4,7 @@
 
 - **演示地址**：https://yidianyisi.cn/
 - **默认加载文档**：`sample.docx`（随项目内置，同源直连，任何部署环境都能直接演示，不依赖第三方网站）
-- **跨域中转演示**：https://yidianyisi.cn/proxy?url=https://www.3520.net/ks/j.docx
+- **跨域中转演示**：https://yidianyisi.cn/proxy?url=https://www.yidianyisi.cn/j.docx
 
 ## 一、项目目录结构与文件说明
 
@@ -66,15 +66,17 @@ Makers 控制台里没有"边缘函数"菜单，函数功能叫 **Functions → 
 
 1. 把整个项目文件夹（含 `index.html` 和 `edge-functions/proxy.js`）上传到 EdgeOne Makers（支持 Git 连接、CLI、MCP 或直接上传）。
 2. `edge-functions/proxy.js` 会自动映射为 `/proxy` 路由，无需任何控制台配置。
-3. 验证：浏览器访问 `https://yidianyisi.cn/proxy?url=https://www.3520.net/ks/j.docx` 能下载到文件即成功。
+3. 验证：浏览器访问 `https://yidianyisi.cn/proxy?url=https://www.yidianyisi.cn/j.docx` 能下载到文件即成功。
 
 原理：页面先直连目标文件，被浏览器跨域拦截时自动改走同域名的 `/proxy` 边缘函数，由边缘节点代取文件。页面与中转同源，不存在跨域。边缘函数自带文档类型白名单，防止被当作任意 URL 代理滥用。
 
 > 规范说明：Makers Edge Functions 位于 `edge-functions/` 目录，导出 `onRequest(context)`（或 `onRequestGet` 等），签名 `context` 含 `request` / `params` / `env`；路由与静态资源冲突时静态资源优先；限制：单函数 5MB、CPU 200ms。详见官方文档 cloud.tencent.com/document/product/1552/127416。
 
+> Cloudflare Pages 部署见单独文档 `DEPLOY-CLOUDFLARE.md`。
+
 ### 方式 B：与文档同域部署（最简单）
 
-把 `index.html` 上传到与文档相同的目录（如 `www.3520.net/ks/`）。同源请求不涉及跨域，什么代理都不需要。
+把 `index.html` 上传到与文档相同的目录（如 `www.yidianyisi.cn/`）。同源请求不涉及跨域，什么代理都不需要。
 
 ### 方式 C：PHP 主机 + proxy.php
 

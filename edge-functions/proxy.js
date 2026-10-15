@@ -4,7 +4,7 @@
 // Makers 自动将 edge-functions/proxy.js 映射为 /proxy 路由，随项目一起部署，
 // 无需在控制台单独创建函数或粘贴代码。
 //
-// 验证：浏览器访问 https://yidianyisi.cn/proxy?url=https://www.3520.net/ks/j.docx
+// 验证：浏览器访问 https://yidianyisi.cn/proxy?url=https://www.yidianyisi.cn/j.docx
 // 能下载到文件即部署成功。
 //
 // 页面（index.html）会先直连目标文件，被浏览器跨域(CORS)拦截时自动改走本函数。
