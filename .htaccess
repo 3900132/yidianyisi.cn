@@ -1,0 +1,5 @@
+# 允许任何页面跨域读取本目录的文件（浏览器直接放行，不再需要 proxy.php 中转）
+# 要求宿主机启用 mod_headers（绝大多数 Apache 主机默认启用）
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+</IfModule>

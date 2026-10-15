@@ -1,0 +1,28 @@
+# 一点意思文档查看器
+
+> 一点意思文档查看器（https://yidianyisi.cn ）：浏览器端在线文档预览工具，直接预览 doc / docx / xlsx 文档及网页版试卷，支持关键词查找定位、移动端访问、本地文件打开，无需安装任何软件。
+
+## 使用方法
+
+- 粘贴文档 URL，点击「加载文档」即可预览（支持 .docx / .xlsx / .xls / HTML 试卷）。
+- 点击「打开本地文件」可直接选择本地磁盘上的文件，不经过网络、不受跨域限制。
+- 在查找框输入关键词，点「查找」高亮全部命中位置，用「上一个 / 下一个」逐个定位。
+
+## 支持的格式
+
+- .docx（Word 文档）
+- .xlsx / .xls（Excel 表格，以 HTML 表格形式展示）
+- .doc（Word 97-2003 OLE2）：内置尽力解析，提取正文文字；复杂排版会丢失，失败时建议另存为 .docx
+- 保存为 HTML 的网页版试卷页面
+
+## 部署
+
+静态单页应用，可托管于任意静态主机（EdgeOne Makers、EdgeOne Pages 等）。
+跨域场景提供两种代理中转方案：EdgeOne Makers Edge Functions（edge-functions/proxy.js，自动映射为 /proxy 路由）与 PHP 代理（proxy.php）。
+详细部署步骤见项目内 README.md。
+
+## 技术细节
+
+- 按文件头魔数识别真实类型：HTML 直接渲染，docx 用 mammoth.js 解析，xlsx/xls 用 SheetJS 解析，.doc 用内置的 OLE2 + piece table 解析提取正文。
+- 解析库（mammoth.browser.min.js / xlsx.full.min.js）与页面同目录本地加载，页面零外部 CDN 依赖，库缺失时页面会给出部署提示。
+- 查找栏采用 position: sticky 吸顶设计，移动端适配基于 viewport 与媒体查询。

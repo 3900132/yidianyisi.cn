@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一点意思文档查看器 - 在线预览 doc / docx / xlsx 文档，支持关键词查找</title>
+<meta name="description" content="一点意思文档查看器：免费在线预览 .doc、.docx、.xlsx、.xls 文档及网页版试卷，无需安装软件，支持关键词查找、上一个/下一个定位、手机访问，也可打开本地文件。">
+<meta name="keywords" content="文档查看器,docx在线预览,doc在线预览,xlsx在线预览,试卷查看,关键词查找,在线文档预览,本地文档预览">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="一点意思文档查看器">
+<meta property="og:title" content="一点意思文档查看器 - 在线预览 doc / docx / xlsx 文档">
+<meta property="og:description" content="浏览器直接预览 doc / docx / xlsx 文档及网页版试卷，支持关键词查找定位，手机可用，支持打开本地文件。">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://yidianyisi.cn/">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "name": "一点意思文档查看器",
+      "url": "https://yidianyisi.cn/",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires JavaScript",
+      "description": "一点意思文档查看器：在浏览器中直接预览 doc、docx、xlsx 文档及网页版试卷，支持关键词查找定位、手机访问与本地文件打开。",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "如何在线预览 docx 或 xlsx 文件？",
+          "acceptedAnswer": { "@type": "Answer", "text": "打开文档查看器，粘贴文档的 URL 后点击「加载文档」，或点击「打开本地文件」选择本地磁盘上的文件，即可在浏览器中直接预览，无需安装 Word 或 Excel。" }
+        },
+        {
+          "@type": "Question",
+          "name": "文档查看器支持哪些文件格式？",
+          "acceptedAnswer": { "@type": "Answer", "text": "支持 .docx（Word 文档）、.xlsx / .xls（Excel 表格）、保存为 HTML 的网页版试卷，以及 .doc（Word 97-2003，内置尽力解析提取正文文字，复杂排版可能丢失）。" }
+        },
+        {
+          "@type": "Question",
+          "name": "手机上可以使用吗？",
+          "acceptedAnswer": { "@type": "Answer", "text": "可以。页面已做移动端适配，查找栏在滚动时固定在屏幕顶部，方便随时输入关键词查找。" }
+        },
+        {
+          "@type": "Question",
+          "name": "提示 Failed to fetch 或加载失败怎么办？",
+          "acceptedAnswer": { "@type": "Answer", "text": "这通常是浏览器跨域(CORS)限制导致。可在文档所在服务器开启 Access-Control-Allow-Origin 响应头，部署同域代理（proxy.php 或 EdgeOne 边缘函数），或直接使用「打开本地文件」功能。" }
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft Yahei", sans-serif; }
+    body { background: #f5f5f5; padding: 20px; }
+    .toolbar, .searchbar {
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    /* 查找栏吸顶：滚动时跟随屏幕 */
+    .searchbar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        margin-bottom: 20px;
+    }
+    #urlInput { flex: 1; min-width: 300px; padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
+    #searchInput { flex: 1; min-width: 200px; padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
+    .btn { padding: 10px 20px; border: none; border-radius: 6px; background: #1677ff; color: #fff; cursor: pointer; font-size: 16px; }
+    .btn:hover { background: #4096ff; }
+    .btn:active { background: #0958d9; }
+    #viewer { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); min-height: 600px; line-height: 1.8; font-size: 16px; word-wrap: break-word; overflow-wrap: break-word; }
+    #viewer img { max-width: 100%; height: auto; }
+    #viewer p { margin: 0.4em 0; }
+    .highlight { background: #ffeb3b; color: #000; font-weight: bold; padding: 2px 4px; border-radius: 2px; }
+    .current-highlight { outline: 2px solid #ff4d4f; outline-offset: 1px; }
+    #viewer table { border-collapse: collapse; margin: 8px 0 16px; max-width: 100%; display: block; overflow-x: auto; }
+    #viewer td, #viewer th { border: 1px solid #ccc; padding: 4px 10px; font-size: 14px; }
+    .page-title { font-size: 18px; margin: 0 0 12px; color: #333; font-weight: bold; }
+    main { display: block; }
+
+    /* 手机版适配 */
+    @media (max-width: 640px) {
+        body { padding: 10px; }
+        .toolbar, .searchbar { padding: 10px; gap: 8px; margin-bottom: 10px; }
+        #urlInput, #searchInput { flex: 1 1 100%; min-width: 0; }
+        .btn { flex: 1; padding: 10px 0; white-space: nowrap; }
+        #viewer { padding: 15px; min-height: 400px; font-size: 15px; }
+        #viewer td, #viewer th { padding: 3px 6px; font-size: 13px; }
+    }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">一点意思文档查看器</h1>
+
+<div class="toolbar" role="search">
+    <input type="text" id="urlInput" placeholder="粘贴文档URL" value="https://filesamples.com/samples/document/docx/sample1.docx" aria-label="文档URL地址">
+    <button class="btn" onclick="loadDocument()">加载文档</button>
+    <button class="btn" onclick="document.getElementById('fileInput').click()">打开本地文件</button>
+    <input type="file" id="fileInput" accept=".docx,.xlsx,.xls,.doc" style="display:none">
+</div>
+
+<div class="searchbar" role="search">
+    <input type="text" id="searchInput" placeholder="输入关键词查找" aria-label="文档内关键词">
+    <button class="btn" onclick="searchText()">查找</button>
+    <button class="btn" onclick="prevMatch()">上一个</button>
+    <button class="btn" onclick="nextMatch()">下一个</button>
+</div>
+
+<main>
+<div id="viewer">请输入文档URL，点击「加载文档」，或点「打开本地文件」选择本地磁盘上的文件</div>
+</main>
+
+<script>
+'use strict';
+
+// ---------- 本地解析库加载（mammoth / SheetJS 与 index.html 同目录，需一起部署） ----------
+function loadLocalScript(src) {
+    return new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = src;
+        s.onload = () => resolve();
+        s.onerror = () => {
+            s.remove();
+            reject(new Error(`解析库 ${src} 加载失败，请确认它与 index.html 在同一目录并一起部署。`));
+        };
+        document.head.appendChild(s);
+    });
+}
+
+// ---------- 文件抓取：先直连，被CORS/网络拦截时自动改走 proxy.php ----------
+async function fetchFile(fileUrl) {
+    const response = await fetch(fileUrl, {
+        method: 'GET',
+        headers: { 'Accept': 'application/octet-stream, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+        mode: 'cors'
+    });
+    if (!response.ok) {
+        const err = new Error(`HTTP 错误：${response.status}，文件不存在或服务器拒绝访问`);
+        err.isHttpError = true;
+        throw err;
+    }
+    const blob = await response.blob();
+    return await blob.arrayBuffer();
+}
+
+// 代理中转候选：本地PHP（proxy.php）和 EdgeOne 边缘函数（proxy）
+const PROXY_CANDIDATES = ["proxy.php", "proxy"];
+
+async function fetchDocument(url) {
+    try {
+        return await fetchFile(url);
+    } catch (err) {
+        // HTTP 404/403 等错误走代理也一样，直接抛出；
+        // 只有 fetch 本身失败（CORS 拦截、网络错误）才依次尝试代理中转
+        if (err.isHttpError) throw err;
+        let lastErr = err;
+        for (const base of PROXY_CANDIDATES) {
+            try {
+                return await fetchFile(base + "?url=" + encodeURIComponent(url));
+            } catch (e2) {
+                lastErr = e2;
+            }
+        }
+        const e = new Error("直连被浏览器跨域(CORS)拦截，且所有代理中转均不可用");
+        e.proxyUnavailable = true;
+        throw e;
+    }
+}
+
+// ---------- 主流程 ----------
+let originalHtml = "";
+let currentMatchIndex = 0;
+let matches = [];
+
+// 按文件头魔数判断真实类型，不信任扩展名
+// （服务器上的 .doc/.docx 实际是保存下来的 HTML 页面，扩展名不可靠）
+function detectType(buf, fileName) {
+    const u8 = new Uint8Array(buf);
+    const head = new TextDecoder("latin1").decode(u8.slice(0, 512)).trimStart().toLowerCase();
+    if (u8[0] === 0x50 && u8[1] === 0x4B) { // PK.. → zip 容器（docx/xlsx）
+        return (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) ? "xlsx" : "docx";
+    }
+    if (head.startsWith("<!doctype html") || head.startsWith("<html")) return "html";
+    if (u8[0] === 0xD0 && u8[1] === 0xCF && u8[2] === 0x11 && u8[3] === 0xE0) { // OLE2（老 doc/xls）
+        return fileName.endsWith(".xls") ? "xlsx" : "doc";
+    }
+    return "unknown";
+}
+
+function resetViewer(viewer, msg) {
+    viewer.innerHTML = msg;
+    currentMatchIndex = 0;
+    matches = [];
+}
+
+function showLoadError(viewer, err) {
+    if (err.isHttpError) {
+        viewer.innerHTML = `🚨 加载失败：${err.message}<br><br>请确认文件已上传到服务器，且 URL 路径正确。`;
+    } else if (err.proxyUnavailable || (err.message && err.message.indexOf("Failed to fetch") !== -1)) {
+        viewer.innerHTML = `🚨 加载失败：直连被浏览器跨域(CORS)拦截，且已尝试的代理中转（proxy.php / EdgeOne 边缘函数 proxy）均不可用。<br><br>解决办法（任选其一）：<br>1. 把本页面部署到与文档相同的域名下；<br>2. 部署 proxy.php（PHP 主机），或使用 EdgeOne Makers 的 edge-functions/proxy.js；<br>3. 点「打开本地文件」直接选择本地磁盘上的文件。`;
+    } else {
+        viewer.innerHTML = `🚨 加载失败：${err.message}`;
+    }
+    console.error(err);
+}
+
+// ---------- .doc（OLE2）正文提取：解析 FIB + piece table，尽力提取 ----------
+function readU16(u8, off) { return u8[off] | (u8[off + 1] << 8); }
+function readU32(u8, off) { return (u8[off] | (u8[off + 1] << 8) | (u8[off + 2] << 16) | (u8[off + 3] << 24)) >>> 0; }
+function escapeHtml(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+// 清理 .doc 提取出的原始文本：处理域、表格标记、控制字符
+function cleanDocText(raw) {
+    let out = "";
+    let inFieldCode = false; // \x13..\x14 之间是域指令文本，跳过；\x14..\x15 是域结果，保留
+    for (const ch of raw) {
+        const c = ch.codePointAt(0);
+        if (c === 0x13) { inFieldCode = true; continue; }
+        if (c === 0x14) { inFieldCode = false; continue; }
+        if (c === 0x15) { inFieldCode = false; continue; }
+        if (inFieldCode) continue;
+        if (c === 0x07) { out += "\t"; continue; }      // 单元格/行结束
+        if (c === 0x0D || c === 0x0B) { out += "\n"; continue; } // 段落/软换行
+        if (c === 0x0C) { out += "\n\n"; continue; }    // 分页
+        if (c === 0x1E) { out += "-"; continue; }       // 不换行连字符
+        if (c === 0x01 || c === 0x05 || c === 0x08) { continue; } // 嵌入对象/图片占位
+        if (c < 0x20 && c !== 0x09) { continue; }
+        out += ch;
+    }
+    return out;
+}
+
+function docTextToHtml(text) {
+    const paras = text.split("\n").map(p => p.trim()).filter(p => p);
+    if (!paras.length) return "<p>（未提取到正文）</p>";
+    return paras.map(p => `<p>${escapeHtml(p)}</p>`).join("");
+}
+
+function extractDocText(buf) {
+    // 用 SheetJS 内置的 CFB 模块拆开 OLE2 容器（type:"array" 需要 Uint8Array）
+    const cfb = XLSX.CFB.read(new Uint8Array(buf), { type: "array" });
+    const getStream = (name) => {
+        for (let i = 0; i < cfb.FullPaths.length; i++) {
+            const f = cfb.FileIndex[i];
+            if (f.name && f.name.toLowerCase() === name.toLowerCase() && f.content) {
+                return new Uint8Array(f.content);
+            }
+        }
+        return null;
+    };
+    const wd = getStream("WordDocument");
+    if (!wd) return null;
+
+    // Word 97+：FIB(0x1A2)=fcClx、(0x1A6)=lcbClx，piece table 在 1Table/0Table 流里
+    const fcClx = readU32(wd, 0x1A2), lcbClx = readU32(wd, 0x1A6);
+    if (lcbClx > 0) {
+        const fWhich = (readU16(wd, 0x0A) & 0x0200) !== 0;
+        const table = getStream(fWhich ? "1Table" : "0Table") || getStream("1Table") || getStream("0Table");
+        if (table) {
+            let pos = fcClx;
+            const end = fcClx + lcbClx;
+            while (pos >= 0 && pos < end && pos < table.length) {
+                const clxt = table[pos];
+                const prev = pos;
+                if (clxt === 0x01) { // Prc（跳过）
+                    let cb = table[pos + 1] | (table[pos + 2] << 8);
+                    if (cb & 0x8000) cb -= 0x10000;
+                    pos += 3 + cb;
+                    if (pos <= prev) break;
+                } else if (clxt === 0x02) { // Pcdt → PlcPcd
+                    const lcb = readU32(table, pos + 1);
+                    const plc = pos + 5;
+                    const n = Math.floor((lcb - 4) / 12);
+                    if (n <= 0) break;
+                    let text = "";
+                    for (let i = 0; i < n; i++) {
+                        const pcd = plc + 4 * (n + 1) + i * 8;
+                        const fcRaw = readU32(table, pcd + 2);
+                        const compressed = (fcRaw & 0x40000000) !== 0;
+                        const cpStart = readU32(table, plc + i * 4);
+                        const cpEnd = readU32(table, plc + (i + 1) * 4);
+                        const len = cpEnd - cpStart;
+                        if (compressed) {
+                            const fc = (fcRaw & 0x3FFFFFFF) >>> 1;
+                            text += new TextDecoder("windows-1252").decode(wd.subarray(fc, fc + len));
+                        } else {
+                            const fc = fcRaw & 0x7FFFFFFF;
+                            text += new TextDecoder("utf-16le").decode(wd.subarray(fc, fc + len * 2));
+                        }
+                    }
+                    return cleanDocText(text);
+                } else break;
+            }
+        }
+    }
+
+    // 回退：老格式（Word 6/95）或连续文本，按 FIB 的 fcMin/fcMac 提取
+    const fcMin = readU32(wd, 0x18), fcMac = readU32(wd, 0x1C);
+    if (fcMac > fcMin && fcMac <= wd.length) {
+        const seg = wd.subarray(fcMin, fcMac);
+        const utf16 = new TextDecoder("utf-16le").decode(seg);
+        const bad = (utf16.match(/\uFFFD/g) || []).length;
+        return cleanDocText(bad / Math.max(utf16.length, 1) < 0.1 ? utf16 : new TextDecoder("windows-1252").decode(seg));
+    }
+    return null;
+}
+
+// 按真实类型渲染（网络文件和本地文件共用）
+async function renderDoc(arrayBuffer, fileName) {
+    const viewer = document.getElementById("viewer");
+    const type = detectType(arrayBuffer, fileName);
+
+    if (type === "html") {
+        originalHtml = new TextDecoder("utf-8").decode(arrayBuffer);
+        viewer.innerHTML = originalHtml;
+    } else if (type === "docx") {
+        viewer.innerHTML = "正在解析 .docx ...";
+        if (!window.mammoth) await loadLocalScript("mammoth.browser.min.js");
+        const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+        originalHtml = result.value || "<p>（文档内容为空）</p>";
+        viewer.innerHTML = originalHtml;
+    } else if (type === "xlsx") {
+        viewer.innerHTML = "正在解析表格...";
+        if (!window.XLSX) await loadLocalScript("xlsx.full.min.js");
+        const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
+        let html = "";
+        wb.SheetNames.forEach(name => {
+            html += `<h3>${name}</h3>` + XLSX.utils.sheet_to_html(wb.Sheets[name]);
+        });
+        originalHtml = html || "<p>（表格内容为空）</p>";
+        viewer.innerHTML = originalHtml;
+    } else if (type === "doc") {
+        viewer.innerHTML = "正在解析 .doc ...";
+        // SheetJS full 包内置 CFB 模块，用于拆开 OLE2 容器
+        if (!window.XLSX) await loadLocalScript("xlsx.full.min.js");
+        const text = extractDocText(arrayBuffer);
+        if (!text || !text.trim()) {
+            throw new Error("无法从该 .doc 文件提取正文（可能是不受支持的老格式变体）。请用 Word 将该文件另存为 .docx 后重新加载。");
+        }
+        originalHtml = docTextToHtml(text);
+        viewer.innerHTML = originalHtml;
+    } else {
+        throw new Error("无法识别文件内容（支持：HTML / .docx / .xlsx / .xls），请确认文件是否完整。");
+    }
+}
+
+async function loadDocument() {
+    const url = document.getElementById("urlInput").value.trim();
+    const viewer = document.getElementById("viewer");
+
+    if (!url) { viewer.innerHTML = "请输入URL"; return; }
+
+    resetViewer(viewer, "正在加载文档...");
+
+    try {
+        const arrayBuffer = await fetchDocument(url);
+        const fileName = url.split("?")[0].split("/").pop().toLowerCase();
+        await renderDoc(arrayBuffer, fileName);
+    } catch (err) {
+        showLoadError(viewer, err);
+    }
+}
+
+// 本地文件：浏览器文件选择框读取，不经过网络、不受CORS限制
+document.getElementById("fileInput").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    const viewer = document.getElementById("viewer");
+    resetViewer(viewer, `正在打开 ${file.name} ...`);
+    try {
+        const buf = await file.arrayBuffer();
+        await renderDoc(buf, file.name);
+    } catch (err) {
+        showLoadError(viewer, err);
+    }
+});
+
+// ---------- 查找高亮 ----------
+function searchText() {
+    const keyword = document.getElementById("searchInput").value.trim();
+    const viewer = document.getElementById("viewer");
+
+    if (!keyword || !originalHtml) {
+        if (!originalHtml) viewer.innerHTML = "请先加载文档";
+        else viewer.innerHTML = originalHtml;
+        matches = [];
+        return;
+    }
+
+    viewer.innerHTML = originalHtml;
+    matches = [];
+    currentMatchIndex = 0;
+
+    const regex = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+
+    function traverse(node) {
+        if (node.nodeType === 3) {
+            const text = node.nodeValue;
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+                matches.push({ node, start: match.index, length: match[0].length });
+            }
+        } else if (node.nodeType === 1 && !["SCRIPT", "STYLE"].includes(node.tagName)) {
+            Array.from(node.childNodes).forEach(traverse);
+        }
+    }
+
+    traverse(viewer);
+
+    if (matches.length === 0) {
+        alert("未找到关键词：" + keyword);
+        return;
+    }
+
+    matches.forEach((match, index) => {
+        const span = document.createElement("span");
+        span.className = "highlight";
+        if (index === currentMatchIndex) span.classList.add("current-highlight");
+        span.textContent = match.node.nodeValue.slice(match.start, match.start + match.length);
+
+        const after = match.node.splitText(match.start);
+        after.splitText(match.length);
+        match.node.parentNode.insertBefore(span, after);
+        match.node.parentNode.removeChild(match.node);
+    });
+
+    scrollToCurrentMatch();
+}
+
+function prevMatch() {
+    if (matches.length === 0) return;
+    currentMatchIndex = (currentMatchIndex - 1 + matches.length) % matches.length;
+    updateCurrentHighlight();
+}
+
+function nextMatch() {
+    if (matches.length === 0) return;
+    currentMatchIndex = (currentMatchIndex + 1) % matches.length;
+    updateCurrentHighlight();
+}
+
+function updateCurrentHighlight() {
+    const highlights = document.querySelectorAll(".highlight");
+    highlights.forEach((el, idx) => {
+        el.classList.toggle("current-highlight", idx === currentMatchIndex);
+    });
+    scrollToCurrentMatch();
+}
+
+function scrollToCurrentMatch() {
+    const current = document.querySelector(".current-highlight");
+    if (current) current.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+document.getElementById("urlInput").addEventListener("keydown", (e) => { if (e.key === "Enter") loadDocument(); });
+document.getElementById("searchInput").addEventListener("keydown", (e) => { if (e.key === "Enter") searchText(); });
+</script>
+
+</body>
+</html>
