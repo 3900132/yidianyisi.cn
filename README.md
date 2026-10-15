@@ -3,13 +3,15 @@
 一个纯前端的在线文档预览工具：在浏览器中直接预览 `.doc` / `.docx` / `.xlsx` 文档及网页版试卷，支持关键词查找定位、移动端访问、本地文件打开，无需安装任何软件，也无需服务器端解析。
 
 - **演示地址**：https://yidianyisi.cn/
-- **跨域中转演示**：https://yidianyisi.cn/proxy?url=https://filesamples.com/samples/document/docx/sample1.docx
+- **默认加载文档**：`sample.docx`（随项目内置，同源直连，任何部署环境都能直接演示，不依赖第三方网站）
+- **跨域中转演示**：https://yidianyisi.cn/proxy?url=https://www.3520.net/ks/j.docx
 
 ## 一、项目目录结构与文件说明
 
 ```
 ks/
 ├── index.html                 # 查看器页面（含全部前端逻辑与 .doc 解析器）
+├── sample.docx                # 内置演示文档（默认加载，同源直连，无跨域问题）
 ├── edge-functions/
 │   └── proxy.js               # Makers 边缘函数：跨域中转，自动映射为 /proxy 路由
 ├── mammoth.browser.min.js     # docx 解析库（本地加载，零 CDN 依赖）
@@ -28,6 +30,7 @@ ks/
 | 文件 | 方式 A：Makers 托管 | 方式 B：自己服务器（页面与文档同域） | 方式 C：自己服务器（页面放别处 + proxy.php 中转） |
 |---|---|---|---|
 | `index.html` | ✅ 必需 | ✅ 必需 | ✅ 必需 |
+| `sample.docx`（默认演示文档） | ✅ 建议 | ✅ 建议 | ✅ 建议 |
 | `mammoth.browser.min.js` / `xlsx.full.min.js` | ✅ 必需 | ✅ 必需 | ✅ 必需 |
 | `edge-functions/proxy.js` | ✅（整个文件夹上传） | 不需要 | 不需要 |
 | `proxy.php`（务必用带白名单的新版） | 不需要 | 同域时不需要 | ✅ 必需 |
@@ -63,7 +66,7 @@ Makers 控制台里没有"边缘函数"菜单，函数功能叫 **Functions → 
 
 1. 把整个项目文件夹（含 `index.html` 和 `edge-functions/proxy.js`）上传到 EdgeOne Makers（支持 Git 连接、CLI、MCP 或直接上传）。
 2. `edge-functions/proxy.js` 会自动映射为 `/proxy` 路由，无需任何控制台配置。
-3. 验证：浏览器访问 `https://yidianyisi.cn/proxy?url=https://filesamples.com/samples/document/docx/sample1.docx` 能下载到文件即成功。
+3. 验证：浏览器访问 `https://yidianyisi.cn/proxy?url=https://www.3520.net/ks/j.docx` 能下载到文件即成功。
 
 原理：页面先直连目标文件，被浏览器跨域拦截时自动改走同域名的 `/proxy` 边缘函数，由边缘节点代取文件。页面与中转同源，不存在跨域。边缘函数自带文档类型白名单，防止被当作任意 URL 代理滥用。
 
@@ -71,7 +74,7 @@ Makers 控制台里没有"边缘函数"菜单，函数功能叫 **Functions → 
 
 ### 方式 B：与文档同域部署（最简单）
 
-把 `index.html` 上传到与文档相同的目录（如 `yidianyisi.cn/doc/`）。同源请求不涉及跨域，什么代理都不需要。
+把 `index.html` 上传到与文档相同的目录（如 `www.3520.net/ks/`）。同源请求不涉及跨域，什么代理都不需要。
 
 ### 方式 C：PHP 主机 + proxy.php
 

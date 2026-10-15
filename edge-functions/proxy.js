@@ -46,7 +46,14 @@ export async function onRequest(context) {
         });
     }
 
-    const resp = await fetch(target, { redirect: "follow" });
+    const resp = await fetch(target, {
+        redirect: "follow",
+        headers: {
+            // 带浏览器 UA 和 Accept，减少被目标站点反爬拦截的概率
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+            "Accept": "*/*",
+        },
+    });
     const headers = Object.assign({}, CORS, {
         "Content-Type": resp.headers.get("Content-Type") || "application/octet-stream",
     });

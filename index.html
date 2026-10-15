@@ -107,7 +107,7 @@
 <h1 class="page-title">一点意思文档查看器</h1>
 
 <div class="toolbar" role="search">
-    <input type="text" id="urlInput" placeholder="粘贴文档URL" value="https://filesamples.com/samples/document/docx/sample1.docx" aria-label="文档URL地址">
+    <input type="text" id="urlInput" placeholder="粘贴文档URL" value="sample.docx" aria-label="文档URL地址">
     <button class="btn" onclick="loadDocument()">加载文档</button>
     <button class="btn" onclick="document.getElementById('fileInput').click()">打开本地文件</button>
     <input type="file" id="fileInput" accept=".docx,.xlsx,.xls,.doc" style="display:none">
@@ -170,7 +170,10 @@ async function fetchDocument(url) {
         let lastErr = err;
         for (const base of PROXY_CANDIDATES) {
             try {
-                return await fetchFile(base + "?url=" + encodeURIComponent(url));
+                const buf = await fetchFile(base + "?url=" + encodeURIComponent(url));
+                // 代理可能返回错误页/空内容/拦截页：校验魔数，无法识别就继续试下一个候选
+                if (detectType(buf, url) !== "unknown") return buf;
+                lastErr = new Error("代理返回了无法识别的内容");
             } catch (e2) {
                 lastErr = e2;
             }
